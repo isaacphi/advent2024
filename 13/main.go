@@ -57,6 +57,7 @@ func main() {
 			if i == 2 {
 				x, _ := strconv.Atoi(fields[1][2 : len(fields[1])-1])
 				y, _ := strconv.Atoi(fields[2][2:])
+				// machine.p = vec{x, y}
 				machine.p = vec{x + 10000000000000, y + 10000000000000}
 			}
 		}
