@@ -51,7 +51,7 @@ func explore(m Map, i int, j int, dir string, newScore int) {
 		score = p.W
 	}
 
-	if score < 0 || newScore <= score {
+	if score < 0 || newScore < score {
 		switch dir {
 		case "N":
 			p.N = newScore
@@ -83,6 +83,7 @@ func explore(m Map, i int, j int, dir string, newScore int) {
 
 func findPath(m Map, path map[vec]bool, p *Point, dir string) {
 	var nextMin int
+
 	path[vec{p.i, p.j}] = true
 
 	if p.isEnd {
@@ -93,68 +94,68 @@ func findPath(m Map, path map[vec]bool, p *Point, dir string) {
 	case "N":
 		i := p.i - 1
 		j := p.j
-		nextMin = min(p.E, p.W)
+		nextMin = min(p.E+ROTATION, p.W+ROTATION)
 		if m[i][j] != nil {
-			nextMin = min(nextMin, m[i][j].N)
-			if m[i][j].N == nextMin {
+			nextMin = min(nextMin, m[i][j].N+MOVEMENT)
+			if m[i][j].N+MOVEMENT == nextMin {
 				findPath(m, path, m[i][j], dir)
 			}
 		}
-		if p.E == nextMin {
+		if p.E+ROTATION == nextMin {
 			findPath(m, path, p, "E")
 		}
-		if p.W == nextMin {
+		if p.W+ROTATION == nextMin {
 			findPath(m, path, p, "W")
 		}
 
 	case "S":
 		i := p.i + 1
 		j := p.j
-		nextMin = min(p.E, p.W)
+		nextMin = min(p.E+ROTATION, p.W+ROTATION)
 		if m[i][j] != nil {
-			nextMin = min(nextMin, m[i][j].S)
-			if m[i][j].S == nextMin {
+			nextMin = min(nextMin, m[i][j].S+MOVEMENT)
+			if m[i][j].S+MOVEMENT == nextMin {
 				findPath(m, path, m[i][j], dir)
 			}
 		}
-		if p.E == nextMin {
+		if p.E+ROTATION == nextMin {
 			findPath(m, path, p, "E")
 		}
-		if p.W == nextMin {
+		if p.W+ROTATION == nextMin {
 			findPath(m, path, p, "W")
 		}
 
 	case "E":
 		i := p.i
 		j := p.j + 1
-		nextMin = min(p.N, p.S)
+		nextMin = min(p.N+ROTATION, p.S+ROTATION)
 		if m[i][j] != nil {
-			nextMin = min(nextMin, m[i][j].E)
-			if m[i][j].E == nextMin {
+			nextMin = min(nextMin, m[i][j].E+MOVEMENT)
+			if m[i][j].E+MOVEMENT == nextMin {
 				findPath(m, path, m[i][j], dir)
 			}
 		}
-		if p.N == nextMin {
+		if p.N+ROTATION == nextMin {
 			findPath(m, path, p, "N")
 		}
-		if p.S == nextMin {
+		if p.S+ROTATION == nextMin {
 			findPath(m, path, p, "S")
 		}
 
 	case "W":
 		i := p.i
 		j := p.j - 1
-		nextMin = min(p.N, p.S)
+		nextMin = min(p.N+ROTATION, p.S+ROTATION)
 		if m[i][j] != nil {
-			nextMin = min(nextMin, m[i][j].W)
-			if m[i][j].W == nextMin {
+			nextMin = min(nextMin, m[i][j].W+MOVEMENT)
+			if m[i][j].W+MOVEMENT == nextMin {
 				findPath(m, path, m[i][j], dir)
 			}
 		}
-		if p.N == nextMin {
+		if p.N+ROTATION == nextMin {
 			findPath(m, path, p, "N")
 		}
-		if p.S == nextMin {
+		if p.S+ROTATION == nextMin {
 			findPath(m, path, p, "S")
 		}
 	}
@@ -162,7 +163,7 @@ func findPath(m Map, path map[vec]bool, p *Point, dir string) {
 
 func main() {
 	data, _ := os.ReadFile("test_data")
-	// data, _ = os.ReadFile("data")
+	data, _ = os.ReadFile("data")
 	input := string(data)
 
 	H := len(strings.Split(input, "\n"))
@@ -203,6 +204,9 @@ func main() {
 	fmt.Println(len(path))
 
 	printGrid(grid, path)
-	fmt.Println(grid[9][2])
+	fmt.Println(grid[13][1])
+	fmt.Println(grid[12][1])
 	fmt.Println(grid[11][1])
+	fmt.Println(grid[10][1])
+	fmt.Println(grid[11][2])
 }
