@@ -15,11 +15,8 @@ type computer struct {
 	output         []int
 }
 
-func (c *computer) getLiteralOperand() (int, error) {
-	if c.instructionPtr == len(c.instructions)-1 {
-		return 0, errors.New("invalid program: no operand")
-	}
-	return c.instructions[c.instructionPtr+1], nil
+func (c *computer) getLiteralOperand() int {
+	return c.instructions[c.instructionPtr+1]
 }
 
 func (c *computer) getComboOperand() (int, error) {
@@ -71,7 +68,7 @@ func (c *computer) process() error {
 		}
 		c.A = c.A / pow2(op)
 	case 1:
-		op, _ := c.getLiteralOperand()
+		op := c.getLiteralOperand()
 		c.B = c.B ^ op
 	case 2:
 		op, err := c.getComboOperand()
@@ -81,12 +78,12 @@ func (c *computer) process() error {
 		c.B = op % 8
 	case 3:
 		if c.A != 0 {
-			op, _ := c.getLiteralOperand()
+			op := c.getLiteralOperand()
 			c.instructionPtr = op
 			return nil
 		}
 	case 4:
-		_, _ = c.getLiteralOperand()
+		_ = c.getLiteralOperand()
 		c.B = c.B ^ c.C
 	case 5:
 		op, err := c.getComboOperand()
@@ -95,7 +92,7 @@ func (c *computer) process() error {
 		}
 		c.output = append(c.output, op%8)
 		if len(c.output) > len(c.instructions) || c.output[len(c.output)-1] != c.instructions[len(c.output)-1] {
-			return errors.New("wrong value for A")
+			// return errors.New("wrong value for A")
 		}
 	case 6:
 		op, err := c.getComboOperand()
@@ -115,6 +112,16 @@ func (c *computer) process() error {
 	return nil
 }
 
+func (c *computer) run() {
+	for {
+		fmt.Println(*c)
+		if err := c.process(); err != nil {
+			fmt.Println(err)
+			break
+		}
+	}
+}
+
 func parseInstructions(instructions string) []int {
 	output := make([]int, 0)
 	for _, e := range strings.Split(instructions, ",") {
@@ -129,9 +136,35 @@ func parseRegister(row string) int {
 	return reg
 }
 
+func runOnce(A int) (newA, newB, newC, output int) {
+	B := A & 0b111
+	B = B ^ 0b001
+	C := A >> B
+	A = A >> 3
+	B = B ^ C
+	B = B ^ 0b110
+	output = B & 0b111
+	return A, B, C, output
+}
+
+func getSpot(A, i int, input []int) {
+	for a := 0; a < 8; a++ {
+		newA := A | a
+		_, _, _, output := runOnce(newA)
+		if output == input[i] {
+			if i == 0 {
+				fmt.Println(newA)
+			} else {
+				getSpot(newA<<3, i-1, input)
+			}
+		}
+	}
+}
+
 func main() {
-	data, _ := os.ReadFile("test_data")
-	// data, _ = os.ReadFile("data")
+	// data, _ := os.ReadFile("test_data")
+	// data, _ := os.ReadFile("test_data2")
+	data, _ := os.ReadFile("data")
 
 	input := string(data)
 	c := computer{instructionPtr: 0}
@@ -150,20 +183,17 @@ func main() {
 		}
 	}
 
-	for i := 0; i < 10000000000; i++ {
-		c.A = i
-		c.B = 0
-		c.C = 0
-		c.instructionPtr = 0
-		c.output = make([]int, 0)
-		for {
-			if err := c.process(); err != nil {
-				break
-			}
-		}
-		if printInstructions(c.output) == startInstructions {
-			fmt.Println(i)
-			break
-		}
-	}
+	// c.A = 117440
+	// c.run()
+
+	fmt.Println(c)
+
+	getSpot(0, 15, c.instructions)
+	// A, B, C := c.A, c.B, c.C
+	// var output int
+	// for A > 0 {
+	// 	A, B, C, output = runOnce(A)
+	// 	fmt.Println(output)
+	// }
+
 }
