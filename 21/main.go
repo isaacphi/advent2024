@@ -13,13 +13,14 @@ func main() {
 	input := string(data)
 	codes := strings.Fields(input)
 
-	// fmt.Println(codes)
 	codes = []string{"379A"}
+	// fmt.Println(codes)
 
 	answer := 0
 	for _, code := range codes {
-		count := typeCode("A" + code)
 		num, _ := strconv.Atoi(code[:3])
+
+		count := typeCode("A" + code)
 		fmt.Println(count, num)
 		answer += count * num
 	}
@@ -33,23 +34,20 @@ func typeCode(code string) int {
 	for i := 0; i < len(code)-1; i++ {
 		start := string(code[i])
 		end := string(code[i+1])
-		di, dj := getKeypadDistance(start, end)
-		directionPresses := getDirectionPresses(di, dj)
-		fmt.Println(start, end, di, dj, "D1: ", directionPresses)
+		directionPresses := getKeypadDirectionPresses(start, end)
+		fmt.Println(start, end, "D1: ", directionPresses)
 
 		for j := 0; j < len(directionPresses)-1; j++ {
 			start := string(directionPresses[j])
 			end := string(directionPresses[j+1])
-			di, dj := getDirectionDistance(start, end)
-			directionPresses := getDirectionPresses(di, dj)
-			fmt.Println("-", start, end, di, dj, "D2: ", directionPresses)
+			directionPresses := getDirectionPresses(start, end)
+			fmt.Println("-", start, end, "D2: ", directionPresses)
 
 			for k := 0; k < len(directionPresses)-1; k++ {
 				start := string(directionPresses[k])
 				end := string(directionPresses[k+1])
-				di, dj := getDirectionDistance(start, end)
-				directionPresses := getDirectionPresses(di, dj)
-				fmt.Println("--", start, end, di, dj, "D3: ", directionPresses, len(directionPresses)-1)
+				directionPresses := getDirectionPresses(start, end)
+				fmt.Println("--", start, end, "D3: ", directionPresses, len(directionPresses)-1)
 				count += len(directionPresses) - 1
 			}
 			// fmt.Println()
@@ -66,7 +64,55 @@ func abs(n int) int {
 	return n
 }
 
-func getDirectionPresses(di, dj int) string {
+func getDirectionPresses(start, end string) string {
+	si, sj := getDirectionLocation(start)
+	ei, ej := getDirectionLocation(end)
+
+	di := ei - si
+	dj := ej - sj
+
+	var presses strings.Builder
+	var horizontal, vertical string
+
+	presses.WriteString("A")
+
+	if dj > 0 {
+		horizontal = ">"
+	} else {
+		horizontal = "<"
+	}
+	if di > 0 {
+		vertical = "v"
+	} else {
+		vertical = "^"
+	}
+
+	if dj > 0 {
+		for j := 0; j < abs(dj); j++ {
+			presses.WriteString(horizontal)
+		}
+		for i := 0; i < abs(di); i++ {
+			presses.WriteString(vertical)
+		}
+	} else {
+		for i := 0; i < abs(di); i++ {
+			presses.WriteString(vertical)
+		}
+		for j := 0; j < abs(dj); j++ {
+			presses.WriteString(horizontal)
+		}
+	}
+	presses.WriteString("A")
+	return presses.String()
+}
+
+func getKeypadDirectionPresses(start, end string) string {
+	si, sj := getKeypadLocation(start)
+	ei, ej := getKeypadLocation(end)
+
+	di := ei - si
+	dj := ej - sj
+
 	var presses strings.Builder
 	var horizontal, vertical string
 
@@ -146,24 +192,4 @@ func getDirectionLocation(code string) (int, int) {
 		i, j = 0, 2
 	}
 	return i, j
-}
-
-func getKeypadDistance(start, end string) (int, int) {
-	si, sj := getKeypadLocation(start)
-	ei, ej := getKeypadLocation(end)
-
-	di := ei - si
-	dj := ej - sj
-
-	return di, dj
-}
-
-func getDirectionDistance(start, end string) (int, int) {
-	si, sj := getDirectionLocation(start)
-	ei, ej := getDirectionLocation(end)
-
-	di := ei - si
-	dj := ej - sj
-
-	return di, dj
 }
