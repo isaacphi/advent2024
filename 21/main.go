@@ -14,6 +14,18 @@ func main() {
 	codes := strings.Fields(input)
 
 	// codes = []string{"379A"}
+	DEPTH := 25
+	cachedDirectionPresses = make([]map[[4]int]int, DEPTH)
+	for d := 0; d < DEPTH; d++ {
+		cachedDirectionPresses[d] = make(map[[4]int]int)
+		for i := 0; i <= 1; i++ {
+			for j := 0; j <= 2; j++ {
+				if j != 0 || i != 0 {
+
+				}
+			}
+		}
+	}
 
 	answer := 0
 	for _, code := range codes {
@@ -43,6 +55,8 @@ func abs(n int) int {
 	}
 	return n
 }
+
+var cachedDirectionPresses []map[[4]int]int
 
 func getPath(di, dj int, firstDirection string) string {
 	var presses strings.Builder
@@ -85,6 +99,13 @@ func getDirectionPresses(start, end string, n int) int {
 	si, sj := getDirectionLocation(start)
 	ei, ej := getDirectionLocation(end)
 
+	if presses, exists := cachedDirectionPresses[n][[4]int{si, sj, ei, ej}]; exists {
+		// fmt.Println("cache hit")
+		return presses
+	} else {
+		// fmt.Println("Cache not found at layer %v: %v %v %v %v", n, si, sj, ei, ej)
+	}
+
 	paths := make([]string, 0)
 	if !(si == 0 && ej == 0) {
 		paths = append(paths, getPath(ei-si, ej-sj, "horizontal"))
@@ -116,6 +137,7 @@ func getDirectionPresses(start, end string, n int) int {
 		// fmt.Println(n, "direction pad from", start, "to", end, paths, minPresses)
 	}
 
+	cachedDirectionPresses[n][[4]int{si, sj, ei, ej}] = minPresses
 	return minPresses
 }
 
@@ -141,7 +163,7 @@ func getKeypadPresses(start, end string) int {
 		for j := 0; j < len(path)-1; j++ {
 			s := string(path[j])
 			e := string(path[j+1])
-			presses += getDirectionPresses(s, e, 1)
+			presses += getDirectionPresses(s, e, 24)
 		}
 		minPresses = min(minPresses, presses)
 	}
