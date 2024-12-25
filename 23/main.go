@@ -13,179 +13,162 @@ func main() {
 	input := string(data)
 
 	nodes := make(map[string]*node)
-	MAX_GROUP_SIZE := 40
-	setsOfSize := make([]map[string]set, MAX_GROUP_SIZE+1)
-	invalidSetsOfSize := make([]map[string]bool, MAX_GROUP_SIZE+1)
-	setsOfSize[1] = make(map[string]set)
+
+	setsOfSize := make(map[int]map[string]set)
 	setsOfSize[2] = make(map[string]set)
 
 	for _, conn := range strings.Fields(input) {
-		// fmt.Println(conn)
-		computers := strings.Split(conn, "-")
-		for _, c := range computers {
-			// Populate sets of 1
-			s := newSet(c)
-			setsOfSize[1][s.getPassword()] = s
-
+		computerNames := strings.Split(conn, "-")
+		for _, c := range computerNames {
 			if _, exists := nodes[c]; !exists {
 				nodes[c] = &node{
-					name: c,
+					name:        c,
+					connections: make(set),
+					setsOfSize:  make(map[int]map[string]set),
 				}
+				nodes[c].setsOfSize[2] = make(map[string]set)
 			}
 		}
-		for i, c := range computers {
+
+		for i, c := range computerNames {
 			var c2 string
 			if i == 0 {
-				c2 = computers[1]
+				c2 = computerNames[1]
 			} else {
-				c2 = computers[0]
+				c2 = computerNames[0]
 			}
-			nodes[c].connections = append(nodes[c].connections, nodes[c2])
+			nodes[c].connections[c2] = nodes[c2]
 		}
-		// Populate sets of 2
-		s := newSet(computers...)
+
+		s := newSet(nodes[computerNames[0]], nodes[computerNames[1]])
+		nodes[computerNames[0]].setsOfSize[2][s.getPassword()] = s
+		nodes[computerNames[1]].setsOfSize[2][s.getPassword()] = s
+		setsOfSize[2][s.getPassword()] = s
 		setsOfSize[2][s.getPassword()] = s
 	}
 
-	// fmt.Println(nodes)
-	count := 0
-	for _, n := range nodes {
-		for _, c := range n.connections {
-			for _, c2 := range n.connections {
-				if n.name[0] != 't' && c.name[0] != 't' && c2.name[0] != 't' {
-					continue
-				}
-				if c.hasConnection(c2) {
-					// fmt.Println(n.name, c.name, c2.name)
-					count++
-				}
-			}
-		}
-	}
+	// count := 0
+	// for _, n := range nodes {
+	// 	for _, c := range n.connections {
+	// 		for _, c2 := range n.connections {
+	// 			if n.name[0] != 't' && c.name[0] != 't' && c2.name[0] != 't' {
+	// 				continue
+	// 			}
+	// 			if c.hasConnection(c2) {
+	// 				count++
+	// 			}
+	// 		}
+	// 	}
+	// }
+	//
 	// fmt.Println("part 1", count/6)
-	biggestN := 0
-	for n := 3; n <= MAX_GROUP_SIZE; n++ {
-		fmt.Println(n)
-		setsOfSize[n] = make(map[string]set)
-		invalidSetsOfSize[n] = make(map[string]bool)
-		// fmt.Println(n)
 
-		for groupName, group := range setsOfSize[n-1] {
-			fmt.Println(n, groupName)
+	for level := 3; ; level++ {
+		// For each size of cluster, starting a 3 and increasing until there are no more clusters
+		setsOfSize[level] = make(map[string]set)
 
-			largerGroup := newSet(group.contents()...)
-			for nodeName := range setsOfSize[1] {
-				// fmt.Print(nodeName)
-				if group.contains(nodeName) {
-					continue
-				}
-				matches := 0
-				largerGroup.add(nodeName)
-				pw := largerGroup.getPassword()
-				if _, exists := setsOfSize[n][pw]; exists {
-					largerGroup.remove(nodeName)
-					continue
-				}
-				if _, exists := invalidSetsOfSize[n][pw]; exists {
-					largerGroup.remove(nodeName)
-					continue
-				}
+		for _, smallerSet := range setsOfSize[level-1] {
+			// For each cluster of the previous size
+			otherNodes := newSet() // Nodes not in this cluster
+			for _, n := range nodes {
+				otherNodes.add(n)
+			}
 
-				for otherGroupName, otherGroup := range setsOfSize[n-1] {
-					if groupName == otherGroupName {
-						continue
+			for _, n := range smallerSet {
+				// For each other node
+				for _, otherNode := range otherNodes {
+					// If not connected to n, remove from otherNodes
+					if !n.isConnected(otherNode) {
+						otherNodes.remove(otherNode)
 					}
-					if largerGroup.isSupersetOf(otherGroup) {
-						matches++
-					}
-					// fmt.Println(largerGroup, otherGroup, matches)
 				}
-				if matches == n-1 {
-					setsOfSize[n][pw] = largerGroup
-				} else {
-					invalidSetsOfSize[n][pw] = true
+			}
+
+			// Anything remaining in otherNodes is connected to all nodes in smallerSet
+			for _, n := range otherNodes {
+				s := newSet()
+				for _, oldNode := range smallerSet {
+					s.add(oldNode)
 				}
-				largerGroup.remove(nodeName)
+				s.add(n)
+				setsOfSize[level][s.getPassword()] = s
 			}
 		}
-		if len(setsOfSize[n]) == 0 {
-			biggestN = n - 1
-			fmt.Println("done", n)
+
+		fmt.Println("part 2, level", level)
+		for s := range setsOfSize[level] {
+			fmt.Println(s)
+		}
+		if len(setsOfSize[level]) == 0 {
 			break
 		}
 	}
-	for s := range setsOfSize[biggestN] {
-		fmt.Println(s)
+}
+
+type set map[string]*node
+
+func (s set) isEqual(s2 set) bool {
+	return s.getPassword() == s2.getPassword()
+}
+
+func newSet(nodes ...*node) set {
+	s := make(set)
+	for _, n := range nodes {
+		s[n.name] = n
 	}
+	return s
 }
 
-type set map[string]struct{}
-
-func (s set) isSupersetOf(s2 set) bool {
-	count := 0
-	for val := range s2 {
-		if s.contains(val) {
-			count++
-		}
-	}
-	return count == len(s2)
+func (s set) add(n *node) {
+	s[n.name] = n
 }
 
-func (s set) add(nodeName string) {
-	s[nodeName] = struct{}{}
+func (s set) remove(n *node) {
+	delete(s, n.name)
 }
 
-func (s set) remove(nodeName string) {
-	delete(s, nodeName)
-}
-
-func (s set) contains(nodeName string) bool {
-	_, exists := s[nodeName]
+func (s set) contains(n *node) bool {
+	_, exists := s[n.name]
 	return exists
-}
-
-func (s set) contents() []string {
-	c := make([]string, 0)
-	for val := range s {
-		c = append(c, val)
-	}
-	return c
 }
 
 func (s set) getPassword() string {
 	l := make([]string, 0)
-	for node := range s {
-		l = append(l, node)
+	for _, n := range s {
+		l = append(l, n.name)
 	}
 	sort.Strings(l)
 	var sb strings.Builder
-	for i, s := range l {
-		sb.WriteString(s)
-		if i < len(l)-1 {
+	for i, n := range l {
+		sb.WriteString(n)
+		if i != len(l)-1 {
 			sb.WriteString(",")
 		}
 	}
 	return sb.String()
 }
 
-func newSet(vals ...string) set {
-	s := make(set)
-	for _, val := range vals {
-		s.add(val)
-	}
-	return s
-}
-
 type node struct {
-	connections []*node
+	connections set
 	name        string
+	setsOfSize  map[int]map[string]set
 }
 
-func (n *node) hasConnection(n2 *node) bool {
-	for _, c := range n.connections {
-		if c == n2 {
-			return true
+func (n *node) hasConnection(otherNode *node) bool {
+	return n.connections.contains(otherNode)
+}
+
+func (n *node) printNode() {
+	fmt.Println(n.name)
+	for size, sets := range n.setsOfSize {
+		fmt.Println(size)
+		for password := range sets {
+			fmt.Print(password, " ")
 		}
+		fmt.Println()
 	}
-	return false
+}
+
+func (n *node) isConnected(node *node) bool {
+	return n.connections.contains(node)
 }
