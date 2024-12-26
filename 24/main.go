@@ -10,10 +10,10 @@ import (
 )
 
 func main() {
-	data, _ := os.ReadFile("test_data")
-	data, _ = os.ReadFile("test_data_2")
-	data, _ = os.ReadFile("test_data_3")
-	data, _ = os.ReadFile("data")
+	// data, _ := os.ReadFile("test_data")
+	// data, _ = os.ReadFile("test_data_2")
+	// data, _ = os.ReadFile("test_data_3")
+	data, _ := os.ReadFile("data")
 	input := string(data)
 
 	wires := make(map[string]*Wire)
@@ -74,32 +74,30 @@ func main() {
 		// i is the current bit
 
 		testResult := testDigit(wires, gates, i, c)
-		fmt.Println("i =", i, testResult)
 
 		if testResult == false {
 			_, possibleErrors := getNextC(wires, gates, i, c)
 			peGates := make([]string, 0)
 			for _, pe := range possibleErrors {
-				fmt.Println(pe.out.name)
 				peGates = append(peGates, pe.out.name)
 			}
-			fmt.Println("possibleErrors", possibleErrors)
 
 			for _, badWire := range peGates {
 				foundSwap := false
 				for j := range gates {
 					if gates[j].out.name == badWire {
 						for k := range gates {
-							fmt.Println("trying swap", badWire, gates[k].out.name)
 							gates[j].out, gates[k].out = gates[k].out, gates[j].out
-							// todo: only check current z
+							// testDigit function not working properly. Finds invalid swap for digit 5
+							digitString := strconv.Itoa(i)
+							if i < 10 {
+								digitString = "0" + digitString
+							}
 							if !testDigit(wires, gates, i, c) || gates[j].out.name == "z05" {
-								fmt.Println("failed")
 								gates[j].out, gates[k].out = gates[k].out, gates[j].out
 							} else {
 								foundSwap = true
 								swaps = append(swaps, gates[k].out.name, gates[j].out.name)
-								fmt.Println("worked", gates[j].out.name)
 								break
 							}
 						}
@@ -142,27 +140,24 @@ func testDigit(wires map[string]*Wire, gates []Gate, digit int, c *Wire) bool {
 	setValue(wires, 'y', 0)
 
 	for _, v := range []t{
-		t{0, 0, 0, 0},
-		t{0, 0, 1, 0},
-		t{0, 1, 0, 1},
-		t{0, 1, 1, 1},
-		t{1, 0, 0, 1},
-		t{1, 0, 1, 1},
-		t{1, 1, 0, 2},
-		t{1, 1, 1, 2},
+		{0, 0, 0, 0},
+		{0, 0, 1, 0},
+		{0, 1, 0, 1},
+		{0, 1, 1, 1},
+		{1, 0, 0, 1},
+		{1, 0, 1, 1},
+		{1, 1, 0, 2},
+		{1, 1, 1, 2},
 	} {
 		setValue(wires, 'x', 0)
 		setValue(wires, 'y', 0)
 		clearOutput(wires)
 		*x.value = v[0]
 		*y.value = v[1]
+		// testDigit function not working properly
 		c.value = new(int)
 		// *c.value = v[2]
 		run(wires, gates)
-		if digit == 36 {
-			fmt.Println(v)
-			fmt.Println(getValue(wires, 'z') >> digit)
-		}
 		isCorrectValue := (getValue(wires, 'z') >> digit) == v[3]
 		if !isCorrectValue {
 			return false
@@ -182,21 +177,17 @@ func getNextC(wires map[string]*Wire, gates []Gate, digit int, c *Wire) (nextC *
 
 	and1, and1Err := getGateFromInput(x, y, gates, "AND")
 	if and1Err != nil {
-		fmt.Println("can't find and1", and1)
 		panic("can't find add1")
-		return nil, []*Gate{}
 	}
 
 	xor1, xor1Err := getGateFromInput(x, y, gates, "XOR")
 	if xor1Err != nil {
-		fmt.Println("can't find xor1", xor1)
 		panic("can't find xor1")
-		return nil, []*Gate{}
 	}
 
 	and2, and2Err := getGateFromInput(c, xor1.out, gates, "AND")
 	if and2Err != nil {
-		fmt.Println("can't find and2", and2, c.name, xor1.out.name)
+		fmt.Println(digit, "can't find AND2")
 		lastCGate, _ := getGatesFromOutput(c, gates, "OR")
 		return nil, []*Gate{xor1, lastCGate}
 	}
@@ -204,7 +195,7 @@ func getNextC(wires map[string]*Wire, gates []Gate, digit int, c *Wire) (nextC *
 	xor2, xor2Err := getGateFromInput(c, xor1.out, gates, "XOR")
 	// xor2, xor2Err = getGatesFromOutput(z, gates, "XOR")
 	if xor2Err != nil {
-		fmt.Println("can't find xor2", xor2)
+		fmt.Println(digit, "can't find XOR2")
 		lastCGate, _ := getGatesFromOutput(c, gates, "OR")
 		// xor2, xor2Err = getGateFromInput(c, xor1.out, gates, "XOR")
 		return nil, []*Gate{xor1, lastCGate}
@@ -212,22 +203,20 @@ func getNextC(wires map[string]*Wire, gates []Gate, digit int, c *Wire) (nextC *
 
 	or, orErr := getGateFromInput(and1.out, and2.out, gates, "OR")
 	if orErr != nil {
-		fmt.Println("can't find or", or)
+		fmt.Println(digit, "can't find OR")
 		return nil, []*Gate{and2, and1}
 	}
 
-	zGate, zGateErr := getGatesFromOutput(z, gates, "XOR")
+	_, zGateErr := getGatesFromOutput(z, gates, "XOR")
 	if zGateErr != nil {
-		fmt.Println("can't find output", zGate)
+		fmt.Println(digit, "can't find Z")
 		return nil, []*Gate{xor2}
 	}
 
 	if orErr == nil {
-		fmt.Println("ok")
 		return or.out, []*Gate{}
 	}
 	panic("reached end but didn't return")
-	return nil, []*Gate{}
 }
 
 func getGateFromInput(a, b *Wire, gates []Gate, operation string) (*Gate, error) {
